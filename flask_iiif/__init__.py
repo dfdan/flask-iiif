@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Flask-IIIF
-# Copyright (C) 2014, 2015, 2016, 2017 CERN.
+# Copyright (C) 2014, 2015, 2016, 2017, 2020 CERN.
+# Copyright (C) 2020 data-futures.
 #
 # Flask-IIIF is free software; you can redistribute it and/or modify
 # it under the terms of the Revised BSD License; see LICENSE file for
@@ -110,7 +111,7 @@ class IIIF(object):
             `IIIF IMAGE API URI Syntax
             <http://iiif.io/api/image/2.0/#uri-syntax>`
         """
-        from .restful import IIIFImageAPI, IIIFImageInfo, IIIFImageBase
+        from .restful import IIIFImageAPI, IIIFImageInfo, IIIFImageBase, IIIFpManifest
 
         if not prefix.startswith('/') or not prefix.endswith('/'):
             raise RuntimeError(
@@ -136,6 +137,7 @@ class IIIF(object):
                 "<string:version>/<string:uuid>/info.json"
             )
         )
+
         api.add_resource(
             IIIFImageBase,
             url_join(
@@ -143,6 +145,30 @@ class IIIF(object):
                 "<string:version>/<string:uuid>"
             )
         )
+
+        api.add_resource(
+            IIIFpManifest,
+            url_join(
+                prefix,
+                "<string:uuid>/manifest" #do not put presentation API version in the URL!
+            )
+        )
+
+        # api.add_resource(
+        #     IIIFpSequence,
+        #     url_join(
+        #         prefix,
+        #         "<string:uuid>/sequence/<string:name>"
+        #     )
+        # )
+        #
+        # api.add_resource(
+        #     IIIFpCanvas,
+        #     url_join(
+        #         prefix,
+        #         "<string:uuid>/canvas/<string:name>"
+        #     )
+        # )
 
     def uuid_to_image_opener_handler(self, callback):
         """Set the callback for the ``uuid`` to ``image`` convertion.

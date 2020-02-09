@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Flask-IIIF
-# Copyright (C) 2014, 2015, 2016, 2017 CERN.
+# Copyright (C) 2014, 2015, 2016, 2017, 2020 CERN.
+# Copytight (c) 2020 data-futures.
 #
 # Flask-IIIF is free software; you can redistribute it and/or modify
 # it under the terms of the Revised BSD License; see LICENSE file for
@@ -192,4 +193,61 @@ IIIF_API_INFO_RESPONSE_SKELETON = {
             "http://iiif.io/api/image/2/level2.json",
         ]
     }
+}
+
+#API Manifest
+## todo - thumbnail, logo elements
+IIIF_API_MANIFEST_SKELETON = {
+    "v2" : {
+        "@id" : "",
+        "@context" : "http://iiif.io/api/presentation/2/context.json",
+        "@type" : "sc:Manifest",
+
+        "label" : "",
+        "metadata" : [],
+        "description" : "",
+        "license" : "",
+        "attribution" : "",
+        "sequences" : [
+            {
+                "@id" : "",
+                "@type" : "sc:Sequence",
+                "label" : "default sequence",
+                "canvases" : []
+            }
+        ]
+
+    }
+}
+
+#API Canvas
+IIIF_API_MANIFEST_CANVAS_SKELETON = {
+    "@id" : "",
+    "@type" : "sc:Canvas",
+    "@context" : "http://iiif.io/api/presentation/2/context.json",
+    "label" : "image",
+    "width" : 0,
+    "height" : 0,
+    "images" : [
+        {
+            "@id" : "",
+            "@type" : "oa:Annotation",
+            "@context" : "http://iiif.io/api/presentation/2/context.json",
+            "motivation" : "sc:Painting",
+            "on" : "",
+            "resource" : {
+                "@id" : "",
+                "@type" : "dctypes:Image",
+                "format" : "image/jpeg", #force to jpeg for now, but should check file..
+                "width" : 0,
+                "height" : 0,
+                "service" : {
+                    "@id" : "",
+                    "@context" : "http://iiif.io/api/image/2/context.json", #forcing/assuming v2 here...
+                    "profile" : "http://iiif.io/api/image/2/level2.json"
+                }
+            }
+        }
+    ],
+    "thumbnail" : []
 }

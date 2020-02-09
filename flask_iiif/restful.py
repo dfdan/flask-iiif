@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Flask-IIIF
-# Copyright (C) 2014, 2015, 2016, 2017 CERN.
+# Copyright (C) 2014, 2015, 2016, 2017, 2020 CERN.
+# Copyright (c) 2020 data-futures
 #
 # Flask-IIIF is free software; you can redistribute it and/or modify
 # it under the terms of the Revised BSD License; see LICENSE file for
@@ -25,6 +26,8 @@ from .decorators import api_decorator, error_handler
 from .signals import iiif_after_info_request, iiif_after_process_request, \
     iiif_before_info_request, iiif_before_process_request
 from .utils import datetime_to_float, should_cache
+
+import copy
 
 current_iiif = LocalProxy(lambda: current_app.extensions['iiif'])
 
@@ -219,3 +222,66 @@ class IIIFImageAPI(Resource):
         if additional_headers:
             response.headers.extend(additional_headers)
         return response
+
+
+class IIIFpManifest(Resource):
+    """IIIF Image Manifest"""
+
+    method_decorators = [
+        error_handler,
+        api_decorator
+    ]
+
+    @cors.crossdomain(origin='*', methods='GET')
+    def get(self,uuid):
+
+        img = IIIFImageAPIWrapper.open_image(current_iiif.uuid_to_image_opener(uuid));
+        width,height = img.size()
+
+        id = url_for('iiifpmanifest',uuid=uuid, _external=True )
+
+        manifest = copy.deepcopy(current_app.config['IIIF_API_MANIFEST_SKELETON']['v2'])
+        manifest['sequences'][0]['canvases'].append(current_app.config['IIIF_API_MANIFEST_CANVAS_SKELETON'])
+
+        # todo - create endpoints for the sequences, cavnases, resources and services
+
+        manifest['@id']=id
+        manifest['description']='description'
+        manifest['label']='label'
+        manifest['attribution']='attribution',
+        manifest['license']='license'
+
+        manifest['metadata'].append({
+            'label' : 'creator',
+            'value' : 'InvenioRDM'
+        })
+
+
+        manifest['sequences'][0]['@id']=id[:-8] + 'sequences/normal'
+        manifest['sequences'][0]['canvases'][0]['@id']=id[:-8] + 'canvases/p1'
+        manifest['sequences'][0]['canvases'][0]['images'][0]['@id']=id[:-8] + 'annotations/img1'
+        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['@id']= url_for(
+            'iiifimagebase',
+            uuid=uuid,
+            version='v2',
+            _external=True
+        )
+        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['service']['@id']= url_for(
+            'iiifimagebase',
+            uuid=uuid,
+            version='v2',
+            _external=True
+        )
+
+        manifest['sequences'][0]['canvases'][0]['width']=width
+        manifest['sequences'][0]['canvases'][0]['height']=height
+        manifest['sequences'][0]['canvases'][0]['images'][0]['on']=manifest['sequences'][0]['canvases'][0]['@id']
+        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['width']=width
+        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['height']=height
+
+        manifest['debugging'] = {
+            'uuid' : uuid,
+        }
+#        foo = current_iiif.uuid_to_path(uuid);
+
+        return jsonify(manifest)
