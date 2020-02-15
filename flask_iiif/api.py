@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Flask-IIIF
-# Copyright (C) 2014, 2015, 2016, 2017 CERN.
+# Copyright (C) 2014-2020 CERN.
+# Copyright (C) 2020 data-futures.
 #
 # Flask-IIIF is free software; you can redistribute it and/or modify
 # it under the terms of the Revised BSD License; see LICENSE file for
@@ -13,18 +14,22 @@ import itertools
 import math
 import os
 import re
+import copy
 
-from flask import current_app
+from flask import current_app, url_for
 from PIL import Image
 from six import BytesIO, string_types
 from werkzeug.utils import import_string
+from werkzeug.local import LocalProxy
 
 from .errors import IIIFValidatorError, MultimediaImageCropError, \
     MultimediaImageFormatError, MultimediaImageNotFound, \
     MultimediaImageQualityError, MultimediaImageResizeError, \
     MultimediaImageRotateError
 from .utils import fill_background, resize_gif, resize_with_background_gif
+from .config import IIIF_FORMATS
 
+current_iiif = LocalProxy(lambda: current_app.extensions['iiif'])
 
 class MultimediaObject(object):
     """The Multimedia Object."""
@@ -172,8 +177,8 @@ class MultimediaImage(MultimediaObject):
             width = max(1, int(real_width * ratio))
             height = max(1, int(real_height * ratio))
             # check if it's not too small for the requested window
-            if not (width == point_x and height == point_y):
-                fits = False
+            #if not (width == point_x and height == point_y):
+            #    fits = False
 
         # Check if it is `w,`
         elif dimensions.endswith(','):
@@ -363,6 +368,13 @@ class MultimediaImage(MultimediaObject):
         :return: the image size
         """
         return self.image.size
+
+    def format(self):
+        """Return the current image format.
+
+        :return: the image format
+        """
+        return self.image.format
 
     def save(self, path, image_format="jpeg", quality=90):
         """Store the image to the specific path.
@@ -584,3 +596,38 @@ class IIIFImageAPIWrapper(MultimediaImage):
                 "The requested image cannot be opened"
             )
         return cls(image)
+
+
+class IIIFManifest(MultimediaImage):
+    """IIIF image resource (for manifests)"""
+
+    def image(**kwargs):
+        """Generate an image suitable for embedding in a Manifest given image in a manifest
+
+        :returns: IIIF resource object
+        :param str uuid: image identifier (uuid:uuid:filename)
+        :param str on: optional canvas, or returns empty string
+        :param str imgapiver: optional image API version to use, defaults to v2
+        :rtype: dict
+
+        """
+        #properly validate parameters
+        uuid = kwargs.get('uuid')
+        on = kwargs.get('on', '')
+        imgapiver = kwargs.get('imgapiver', 'v2')
+
+        i = copy.deepcopy(current_app.config['IIIF_PRES_API_IMAGE_SKELETON'])
+
+        img = IIIFImageAPIWrapper.open_image(current_iiif.uuid_to_image_opener(uuid))
+        width,height = img.size()
+
+        id = url_for('iiifimagebase',uuid=uuid, version=imgapiver, _external=True )
+        i['@id']=url_for('iiifpmanifest',uuid=uuid,_external=True)[:-9]
+        i['on']=on
+        i['resource']['@id']=id;
+        i['resource']['service']['@id']=id;
+        i['resource']['format']=IIIF_FORMATS[img.format().lower()]
+        i['resource']['width']=width
+        i['resource']['height']=height
+
+        return i

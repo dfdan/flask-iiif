@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Flask-IIIF
-# Copyright (C) 2014, 2015, 2016, 2017, 2020 CERN.
+# Copyright (C) 2014-2020 CERN.
 # Copyright (c) 2020 data-futures
 #
 # Flask-IIIF is free software; you can redistribute it and/or modify
@@ -10,6 +10,7 @@
 
 """Multimedia IIIF Image API."""
 import datetime
+import copy
 from email.utils import parsedate
 from io import BytesIO
 
@@ -21,13 +22,12 @@ from flask_restful.utils import cors
 from werkzeug.local import LocalProxy
 from werkzeug.utils import secure_filename
 
-from .api import IIIFImageAPIWrapper
+from .api import IIIFImageAPIWrapper, IIIFManifest
 from .decorators import api_decorator, error_handler
 from .signals import iiif_after_info_request, iiif_after_process_request, \
     iiif_before_info_request, iiif_before_process_request
 from .utils import datetime_to_float, should_cache
-
-import copy
+from .config import IIIF_THUMBNAIL_SPEC
 
 current_iiif = LocalProxy(lambda: current_app.extensions['iiif'])
 
@@ -223,7 +223,6 @@ class IIIFImageAPI(Resource):
             response.headers.extend(additional_headers)
         return response
 
-
 class IIIFpManifest(Resource):
     """IIIF Image Manifest"""
 
@@ -235,8 +234,7 @@ class IIIFpManifest(Resource):
     @cors.crossdomain(origin='*', methods='GET')
     def get(self,uuid):
 
-        img = IIIFImageAPIWrapper.open_image(current_iiif.uuid_to_image_opener(uuid));
-        width,height = img.size()
+        #img = IIIFImageAPIWrapper.open_image(current_iiif.uuid_to_image_opener(uuid));
 
         id = url_for('iiifpmanifest',uuid=uuid, _external=True )
 
@@ -246,42 +244,35 @@ class IIIFpManifest(Resource):
         # todo - create endpoints for the sequences, cavnases, resources and services
 
         manifest['@id']=id
-        manifest['description']='description'
-        manifest['label']='label'
-        manifest['attribution']='attribution',
-        manifest['license']='license'
+        manifest['description']='auto generated iiif manifest for single image'
+        manifest['label']='image'
+        manifest['attribution']='',
+        manifest['license']=''
+
+        manifest['thumbnail']['@id'] = url_for(
+            'iiifimagebase',
+            uuid=uuid,
+            version='v2',
+            _external=True
+        )+IIIF_THUMBNAIL_SPEC
+
+        manifest['thumbnail']['service']['@id'] = url_for(
+            'iiifimagebase',
+            uuid=uuid,
+            version='v2',
+            _external=True
+        )
 
         manifest['metadata'].append({
-            'label' : 'creator',
+            'label' : 'Repository',
             'value' : 'InvenioRDM'
         })
 
-
-        manifest['sequences'][0]['@id']=id[:-8] + 'sequences/normal'
+        manifest['sequences'][0]['@id']=id[:-8] + 'sequences/normal' #trim manifest from end of string and replace
         manifest['sequences'][0]['canvases'][0]['@id']=id[:-8] + 'canvases/p1'
-        manifest['sequences'][0]['canvases'][0]['images'][0]['@id']=id[:-8] + 'annotations/img1'
-        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['@id']= url_for(
-            'iiifimagebase',
-            uuid=uuid,
-            version='v2',
-            _external=True
-        )
-        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['service']['@id']= url_for(
-            'iiifimagebase',
-            uuid=uuid,
-            version='v2',
-            _external=True
-        )
 
-        manifest['sequences'][0]['canvases'][0]['width']=width
-        manifest['sequences'][0]['canvases'][0]['height']=height
-        manifest['sequences'][0]['canvases'][0]['images'][0]['on']=manifest['sequences'][0]['canvases'][0]['@id']
-        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['width']=width
-        manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['height']=height
-
-        manifest['debugging'] = {
-            'uuid' : uuid,
-        }
-#        foo = current_iiif.uuid_to_path(uuid);
+        manifest['sequences'][0]['canvases'][0]['images']=[IIIFManifest.image(uuid=uuid,on=manifest['sequences'][0]['canvases'][0]['@id'])]
+        manifest['sequences'][0]['canvases'][0]['width']=manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['width']
+        manifest['sequences'][0]['canvases'][0]['height']=manifest['sequences'][0]['canvases'][0]['images'][0]['resource']['height']
 
         return jsonify(manifest)

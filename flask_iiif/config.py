@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Flask-IIIF
-# Copyright (C) 2014, 2015, 2016, 2017, 2020 CERN.
+# Copyright (C) 2014-2020 CERN.
 # Copytight (c) 2020 data-futures.
 #
 # Flask-IIIF is free software; you can redistribute it and/or modify
@@ -93,6 +93,9 @@ IIIF_FORMATS = {
     'png': 'image/png',
     'tif': 'image/tiff',
 }
+
+#Spec to use when creating thumbnails in IIIF Manifests
+IIIF_THUMBNAIL_SPEC='/full/!250,250/0/default.jpg'
 
 # Regular expressions to validate each parameter
 IIIF_VALIDATIONS = {
@@ -208,6 +211,22 @@ IIIF_API_MANIFEST_SKELETON = {
         "description" : "",
         "license" : "",
         "attribution" : "",
+        "thumbnail" : {
+            "@id" : "",
+            "service" : {
+                "@id" : "",
+                "@context" : "http://iiif.io/api/image/2/context.json",
+                "profile" : "http://iiif.io/api/image/2/level2.json"
+            }
+        },
+        "logo" : {
+            "@id" : "",
+            "service" : {
+                "@id" : "",
+                "@context" : "http://iiif.io/api/image/2/context.json",
+                "profile" : "http://iiif.io/api/image/2/level2.json"
+            }
+        },
         "sequences" : [
             {
                 "@id" : "",
@@ -216,7 +235,26 @@ IIIF_API_MANIFEST_SKELETON = {
                 "canvases" : []
             }
         ]
+    }
+}
 
+#API Image object - this is probably the bit its most appropriate for flask-iiif to return
+IIIF_PRES_API_IMAGE_SKELETON = {
+    "@id" : "",
+    "@type" : "oa:Annotation",
+    "motivation" : "sc:Painting",
+    "on": "",
+    "resource" : {
+        "@id" : "",
+        "@type" : "dctypes:Image",
+        "format" : "",
+        "width" : 0,
+        "height" : 0,
+        "service" : {
+            "@id" : "",
+            "@context" : "http://iiif.io/api/image/2/context.json",
+            "profile" : "http://iiif.io/api/image/2/level2.json"
+        }
     }
 }
 
@@ -229,25 +267,7 @@ IIIF_API_MANIFEST_CANVAS_SKELETON = {
     "width" : 0,
     "height" : 0,
     "images" : [
-        {
-            "@id" : "",
-            "@type" : "oa:Annotation",
-            "@context" : "http://iiif.io/api/presentation/2/context.json",
-            "motivation" : "sc:Painting",
-            "on" : "",
-            "resource" : {
-                "@id" : "",
-                "@type" : "dctypes:Image",
-                "format" : "image/jpeg", #force to jpeg for now, but should check file..
-                "width" : 0,
-                "height" : 0,
-                "service" : {
-                    "@id" : "",
-                    "@context" : "http://iiif.io/api/image/2/context.json", #forcing/assuming v2 here...
-                    "profile" : "http://iiif.io/api/image/2/level2.json"
-                }
-            }
-        }
+        IIIF_PRES_API_IMAGE_SKELETON
     ],
     "thumbnail" : []
 }

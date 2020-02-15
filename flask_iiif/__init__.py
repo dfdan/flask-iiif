@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Flask-IIIF
-# Copyright (C) 2014, 2015, 2016, 2017, 2020 CERN.
+# Copyright (C) 2014-2020 CERN.
 # Copyright (C) 2020 data-futures.
 #
 # Flask-IIIF is free software; you can redistribute it and/or modify
@@ -150,25 +150,9 @@ class IIIF(object):
             IIIFpManifest,
             url_join(
                 prefix,
-                "<string:uuid>/manifest" #do not put presentation API version in the URL!
+                "<string:uuid>/manifest"
             )
         )
-
-        # api.add_resource(
-        #     IIIFpSequence,
-        #     url_join(
-        #         prefix,
-        #         "<string:uuid>/sequence/<string:name>"
-        #     )
-        # )
-        #
-        # api.add_resource(
-        #     IIIFpCanvas,
-        #     url_join(
-        #         prefix,
-        #         "<string:uuid>/canvas/<string:name>"
-        #     )
-        # )
 
     def uuid_to_image_opener_handler(self, callback):
         """Set the callback for the ``uuid`` to ``image`` convertion.

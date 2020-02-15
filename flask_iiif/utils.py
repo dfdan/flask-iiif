@@ -11,6 +11,7 @@
 import datetime
 import shutil
 import tempfile
+import copy
 from email.utils import formatdate
 from os.path import dirname, join
 
@@ -61,7 +62,6 @@ def iiif_image_url(**kwargs):
             version=kwargs.get('version', 'v2'),
             **url_for_args
         )
-
 
 def create_gif_from_frames(frames, duration=500, loop=0):
     """Create a GIF image.
